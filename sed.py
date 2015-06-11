@@ -20,8 +20,11 @@ import sys
 import pandas as pd
 import machine
 from sklearn_pandas import DataFrameMapper, cross_val_score
-import sklearn.preprocessing, sklearn.decomposition, sklearn.linear_model, sklearn.pipeline, sklearn.metrics
+#import sklearn.preprocessing, sklearn.decomposition, sklearn.linear_model, sklearn.pipeline, sklearn.metrics
 from sklearn import datasets, linear_model
+import matplotlib.pylab as plt
+import numpy as np
+from sklearn import tree
 
 
 catalog = "lwr_train_sdss_dr10.dat2"
@@ -48,7 +51,7 @@ print "deleted "+str(lcatinit - lcatclean)+ " objects over " + str(lcatinit) + "
 
 
 # Keeps only the bright objects to make tests on the good data first.
-bright_limit = 17.
+bright_limit = 20.
 cat_bright = cat[cat.ix[:, "r"] < bright_limit]
 print "The bright sample contains "+str(len(cat_bright))+" objects."
 
@@ -63,13 +66,22 @@ cat_target_X = cat_target.drop('specz', axis=1)
 cat_target_true = cat_target.ix[:,'specz']
 
 
-regr = linear_model.LinearRegression()
+#regr = linear_model.LinearRegression()
+#regr = linear_model.BayesianRidge()
+regr = tree.DecisionTreeRegressor()
 regr.fit(cat_train_X, cat_train_y)
 
 cat_target_prediction = regr.predict(cat_target_X)
 
 print cat_target_prediction
 
+plt.figure()
+#plt.hist2d(np.array(cat_target_true), cat_target_prediction, bins=1000)
+plt.hist2d(np.array(cat_target_true), np.array(cat_target_true) - cat_target_prediction, bins=1000)
+plt.show()
+#plt.xlabel('column 0')
+#plt.ylabel('column 1')
+#plt.title('column 0 x 1')
 
 
 
