@@ -19,7 +19,9 @@ __status__ = "Development"
 import sys
 import pandas as pd
 import machine
-
+from sklearn_pandas import DataFrameMapper, cross_val_score
+import sklearn.preprocessing, sklearn.decomposition, sklearn.linear_model, sklearn.pipeline, sklearn.metrics
+from sklearn import datasets, linear_model
 
 
 catalog = "lwr_train_sdss_dr10.dat2"
@@ -46,12 +48,40 @@ print "deleted "+str(lcatinit - lcatclean)+ " objects over " + str(lcatinit) + "
 
 
 # Keeps only the bright objects to make tests on the good data first.
-bright_limit = 22
-cat = cat[cat.ix[:, "r"] < 22.]
+bright_limit = 17.
+cat_bright = cat[cat.ix[:, "r"] < bright_limit]
+print "The bright sample contains "+str(len(cat_bright))+" objects."
+
+
+cat_train = cat_bright.iloc[::2]
+cat_target = cat_bright.iloc[1::2]
+
+cat_train_X = cat_train.drop('specz', axis=1)
+cat_train_y = cat_train.ix[:,'specz']
+
+cat_target_X = cat_target.drop('specz', axis=1)
+cat_target_true = cat_target.ix[:,'specz']
+
+
+regr = linear_model.LinearRegression()
+regr.fit(cat_train_X, cat_train_y)
+
+cat_target_prediction = regr.predict(cat_target_X)
+
+print cat_target_prediction
+
+
+
 
 
 """
 model = machine.logistic()
-model.train(X_sure_learn, ymol_learn)
-y_prediction = model.use(X_sure_target)
+model.train(cat_train_X, cat_train_y)
+cat_target_prediction = model.use(cat_target_X)
+"""
+
+
+"""
+mapper = DataFrameMapper([('r', sklearn.preprocessing.StandardScaler())])
+print mapper.fit_transform(cat_bright.copy())
 """
