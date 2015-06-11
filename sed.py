@@ -26,6 +26,7 @@ import matplotlib.pylab as plt
 import numpy as np
 from sklearn import tree
 
+from pybrain.tools.shortcuts import buildNetwork
 
 catalog = "lwr_train_sdss_dr10.dat2"
 
@@ -73,15 +74,21 @@ regr.fit(cat_train_X, cat_train_y)
 
 cat_target_prediction = regr.predict(cat_target_X)
 
-print cat_target_prediction
+diff = np.array(cat_target_true) - cat_target_prediction
+np_cat_target_true = np.array(cat_target_true)
+
+print diff.std()
 
 plt.figure()
 #plt.hist2d(np.array(cat_target_true), cat_target_prediction, bins=1000)
-plt.hist2d(np.array(cat_target_true), np.array(cat_target_true) - cat_target_prediction, bins=1000)
-plt.show()
-#plt.xlabel('column 0')
-#plt.ylabel('column 1')
-#plt.title('column 0 x 1')
+plt.hist2d(np_cat_target_true, diff, bins=1000)
+plt.title(str(regr)[0:15])
+plt.xlabel('z')
+plt.ylabel('dz')
+plt.xlim([0., 0.6])
+plt.ylim([-0.08, 0.08])
+#plt.show()
+plt.savefig("plots/"+str(regr)[0:13]+".png")
 
 
 
