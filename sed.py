@@ -18,6 +18,7 @@ __status__ = "Development"
 #################
 import sys
 import pandas as pd
+import machine
 
 
 
@@ -33,4 +34,24 @@ cols = list(cat.columns.values)
 # print a column
 #print cat.ix[:,'g']
 
+# Delete "weird" objects:
+lcatinit = len(cat)
+cat_min = 14
+cat_max = 24
+for c in cols[:-1]:
+    cat = cat[cat.ix[:, c] > cat_min]
+    cat = cat[cat.ix[:, c] < cat_max]
+lcatclean = len(cat)
+print "deleted "+str(lcatinit - lcatclean)+ " objects over " + str(lcatinit) + " ("+str((lcatinit - lcatclean)/float(lcatinit) * 100.) +"% deletion)"
 
+
+# Keeps only the bright objects to make tests on the good data first.
+bright_limit = 22
+cat = cat[cat.ix[:, "r"] < 22.]
+
+
+"""
+model = machine.logistic()
+model.train(X_sure_learn, ymol_learn)
+y_prediction = model.use(X_sure_target)
+"""
