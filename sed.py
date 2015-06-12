@@ -71,7 +71,7 @@ cat_train_y = cat_train.ix[:,'specz']
 cat_target_X = cat_target.drop('specz', axis=1)
 cat_target_true = cat_target.ix[:,'specz']
 
-"""
+
 ###########################
 ## Artificial Neural Networks :
 ###########################
@@ -91,7 +91,7 @@ trainer.train()
 
 
 sys.exit()
-"""
+
 
 
 ###########################
@@ -108,7 +108,11 @@ cat_target_prediction = regr.predict(cat_target_X)
 diff = np.array(cat_target_true) - cat_target_prediction
 np_cat_target_true = np.array(cat_target_true)
 
-print mad(diff)
+print "Normalized Median Absolute Deviation :"+ str(nmad(diff))
+p_outliers = outliers(diff, np_cat_target_true, nmad(diff))
+print "Percentage of outliers = "+str(p_outliers)+" %"
+
+
 
 plt.figure()
 #plt.hist2d(np.array(cat_target_true), cat_target_prediction, bins=1000)
