@@ -27,6 +27,11 @@ import numpy as np
 from sklearn import tree
 
 from pybrain.tools.shortcuts import buildNetwork
+from pybrain.datasets import SupervisedDataSet
+from pybrain.supervised.trainers import BackpropTrainer
+from pybrain.structure import TanhLayer
+
+from useful import *
 
 catalog = "lwr_train_sdss_dr10.dat2"
 
@@ -66,6 +71,32 @@ cat_train_y = cat_train.ix[:,'specz']
 cat_target_X = cat_target.drop('specz', axis=1)
 cat_target_true = cat_target.ix[:,'specz']
 
+"""
+###########################
+## Artificial Neural Networks :
+###########################
+ninputs = 5
+noutput = 1
+nlayer = 4
+
+net = buildNetwork(ninputs, nlayer, noutput, bias=True, hiddenclass=TanhLayer)
+
+ds = SupervisedDataSet(ninputs, noutput)
+#for i in np.arange(len(cat_train_y)):
+for i in np.arange(10000):
+    ds.addSample(np.array(cat_train_X.iloc[i]), np.array(cat_train_y.iloc[i]))
+
+trainer = BackpropTrainer(net, ds)
+trainer.train()
+
+
+sys.exit()
+"""
+
+
+###########################
+## Regressors :
+###########################
 
 #regr = linear_model.LinearRegression()
 #regr = linear_model.BayesianRidge()
@@ -77,7 +108,7 @@ cat_target_prediction = regr.predict(cat_target_X)
 diff = np.array(cat_target_true) - cat_target_prediction
 np_cat_target_true = np.array(cat_target_true)
 
-print diff.std()
+print mad(diff)
 
 plt.figure()
 #plt.hist2d(np.array(cat_target_true), cat_target_prediction, bins=1000)
