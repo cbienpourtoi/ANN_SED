@@ -20,7 +20,7 @@ import sys
 import pandas as pd
 import machine
 from sklearn_pandas import DataFrameMapper, cross_val_score
-#import sklearn.preprocessing, sklearn.decomposition, sklearn.linear_model, sklearn.pipeline, sklearn.metrics
+# import sklearn.preprocessing, sklearn.decomposition, sklearn.linear_model, sklearn.pipeline, sklearn.metrics
 from sklearn import datasets, linear_model
 import matplotlib.pylab as plt
 import numpy as np
@@ -35,6 +35,11 @@ from useful import *
 
 catalog = "lwr_train_sdss_dr10.dat2"
 
+#method = "ANN"
+method = "Regressors"
+
+
+
 cat = pd.read_table(catalog, delim_whitespace=True)
 
 # Because of file bad formatting:
@@ -43,7 +48,7 @@ cat.drop('#', axis=1, inplace=True)
 cols = list(cat.columns.values)
 
 # print a column
-#print cat.ix[:,'g']
+# print cat.ix[:,'g']
 
 # Delete "weird" objects:
 lcatinit = len(cat)
@@ -53,89 +58,80 @@ for c in cols[:-1]:
     cat = cat[cat.ix[:, c] > cat_min]
     cat = cat[cat.ix[:, c] < cat_max]
 lcatclean = len(cat)
-print "deleted "+str(lcatinit - lcatclean)+ " objects over " + str(lcatinit) + " ("+str((lcatinit - lcatclean)/float(lcatinit) * 100.) +"% deletion)"
+print "deleted " + str(lcatinit - lcatclean) + " objects over " + str(lcatinit) + " (" + str(
+    (lcatinit - lcatclean) / float(lcatinit) * 100.) + "% deletion)"
 
 
 # Keeps only the bright objects to make tests on the good data first.
 bright_limit = 20.
 cat_bright = cat[cat.ix[:, "r"] < bright_limit]
-print "The bright sample contains "+str(len(cat_bright))+" objects."
-
+print "The bright sample contains " + str(len(cat_bright)) + " objects."
 
 cat_train = cat_bright.iloc[::2]
 cat_target = cat_bright.iloc[1::2]
 
 cat_train_X = cat_train.drop('specz', axis=1)
-cat_train_y = cat_train.ix[:,'specz']
+cat_train_y = cat_train.ix[:, 'specz']
 
 cat_target_X = cat_target.drop('specz', axis=1)
-cat_target_true = cat_target.ix[:,'specz']
+cat_target_true = cat_target.ix[:, 'specz']
+
+if method == "ANN":
+    ###########################
+    ## Artificial Neural Networks :
+    ###########################
+    ninputs = 5
+    noutput = 1
+    nlayer = 4
+
+    net = buildNetwork(ninputs, nlayer, noutput, bias=True, hiddenclass=TanhLayer)
+
+    ds = SupervisedDataSet(ninputs, noutput)
+    # for i in np.arange(len(cat_train_y)):
+    for i in np.arange(10000):
+        ds.addSample(np.array(cat_train_X.iloc[i]), np.array(cat_train_y.iloc[i]))
+
+    trainer = BackpropTrainer(net, ds)
+    trainer.train()
 
 
-###########################
-## Artificial Neural Networks :
-###########################
-ninputs = 5
-noutput = 1
-nlayer = 4
+if method == "Regressors":
+    ###########################
+    ## Regressors :
+    ###########################
 
-net = buildNetwork(ninputs, nlayer, noutput, bias=True, hiddenclass=TanhLayer)
+    # regr = linear_model.LinearRegression()
+    # regr = linear_model.BayesianRidge()
+    regr = tree.DecisionTreeRegressor()
+    regr.fit(cat_train_X, cat_train_y)
 
-ds = SupervisedDataSet(ninputs, noutput)
-#for i in np.arange(len(cat_train_y)):
-for i in np.arange(10000):
-    ds.addSample(np.array(cat_train_X.iloc[i]), np.array(cat_train_y.iloc[i]))
+    cat_target_prediction = regr.predict(cat_target_X)
 
-trainer = BackpropTrainer(net, ds)
-trainer.train()
+    diff = np.array(cat_target_true) - cat_target_prediction
+    np_cat_target_true = np.array(cat_target_true)
 
+    print "Normalized Median Absolute Deviation :" + str(nmad(diff))
+    p_outliers = outliers(diff, np_cat_target_true, nmad(diff))
+    print "Percentage of outliers = " + str(p_outliers) + " %"
 
-sys.exit()
+    plt.figure()
+    # plt.hist2d(np.array(cat_target_true), cat_target_prediction, bins=1000)
+    plt.hist2d(np_cat_target_true, diff, bins=1000)
+    plt.title(str(regr)[0:15])
+    plt.xlabel('z')
+    plt.ylabel('dz')
+    plt.xlim([0., 0.6])
+    plt.ylim([-0.08, 0.08])
+    # plt.show()
+    plt.savefig("plots/" + str(regr)[0:13] + ".png")
 
+    """
+    model = machine.logistic()
+    model.train(cat_train_X, cat_train_y)
+    cat_target_prediction = model.use(cat_target_X)
+    """
 
-
-###########################
-## Regressors :
-###########################
-
-#regr = linear_model.LinearRegression()
-#regr = linear_model.BayesianRidge()
-regr = tree.DecisionTreeRegressor()
-regr.fit(cat_train_X, cat_train_y)
-
-cat_target_prediction = regr.predict(cat_target_X)
-
-diff = np.array(cat_target_true) - cat_target_prediction
-np_cat_target_true = np.array(cat_target_true)
-
-print "Normalized Median Absolute Deviation :"+ str(nmad(diff))
-p_outliers = outliers(diff, np_cat_target_true, nmad(diff))
-print "Percentage of outliers = "+str(p_outliers)+" %"
-
-
-
-plt.figure()
-#plt.hist2d(np.array(cat_target_true), cat_target_prediction, bins=1000)
-plt.hist2d(np_cat_target_true, diff, bins=1000)
-plt.title(str(regr)[0:15])
-plt.xlabel('z')
-plt.ylabel('dz')
-plt.xlim([0., 0.6])
-plt.ylim([-0.08, 0.08])
-#plt.show()
-plt.savefig("plots/"+str(regr)[0:13]+".png")
-
-
-
-
-"""
-model = machine.logistic()
-model.train(cat_train_X, cat_train_y)
-cat_target_prediction = model.use(cat_target_X)
-"""
-
-
-"""
-mapper = DataFrameMapper([('r', sklearn.preprocessing.StandardScaler())])
-print mapper.fit_transform(cat_bright.copy())
-"""
+    """
+    mapper = DataFrameMapper([('r', sklearn.preprocessing.StandardScaler())])
+    print mapper.fit_transform(cat_bright.copy())
+    """
